@@ -256,7 +256,7 @@ No fim do código  é possível observar que, se a requisição for bem-sucedida
 Vamos mudar nossa requisição para o seguinte:
 
 ```
-POST / HTTP/1.1
+GET /index.html HTTP/1.1
 Host: localhost:8081
 Content-Length: 2165
 Connection: keep-alive
