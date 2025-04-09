@@ -1,6 +1,4 @@
-# Markdown syntax guide
-
-## Duckware Team - Desafio do Pira
+# Duckware Team - Desafio do Pira
 
 ###### This CTF was (not yet) solved by @0xpics
 
